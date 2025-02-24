@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris Online</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #222;
+        }
+        canvas {
+            border: 2px solid white;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+</head>
+<body>
+    <canvas id="tetris" width="300" height="600"></canvas>
+    <script>
+        const socket = io("wss://your-server-address"); // Cambia esto a tu servidor WebSocket
+        const canvas = document.getElementById("tetris");
+        const ctx = canvas.getContext("2d");
+        const ROWS = 20;
+        const COLS = 10;
+        const BLOCK_SIZE = 30;
+        let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+        
+        const tetrominoes = [
+            [[1, 1, 1, 1]],
+            [[1, 1], [1, 1]],
+            [[0, 1, 0], [1, 1, 1]],
+            [[1, 1, 0], [0, 1, 1]],
+            [[0, 1, 1], [1, 1, 0]]
+        ];
+        
+        let currentPiece = {
+            shape: tetrominoes[Math.floor(Math.random() * tetrominoes.length)],
+            x: 3,
+            y: 0
+        };
+        
+        function drawBoard() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if (board[row][col]) {
+                        ctx.fillStyle = "cyan";
+                        ctx.fillRect(col * BLOCK_SIZE, row * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                        ctx.strokeStyle = "white";
+                        ctx.strokeRect(col * BLOCK_SIZE, row * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                }
+            }
+        }
+        
+        function drawPiece() {
+            ctx.fillStyle = "red";
+            currentPiece.shape.forEach((row, i) => {
+                row.forEach((cell, j) => {
+                    if (cell) {
+                        ctx.fillRect((currentPiece.x + j) * BLOCK_SIZE, (currentPiece.y + i) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                        ctx.strokeStyle = "white";
+                        ctx.strokeRect((currentPiece.x + j) * BLOCK_SIZE, (currentPiece.y + i) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                });
+            });
+        }
+        
+        function update() {
+            drawBoard();
+            drawPiece();
+            requestAnimationFrame(update);
+        }
+        
+        socket.on("updateBoard", (serverBoard) => {
+            board = serverBoard;
+            drawBoard();
+        });
+        
+        socket.on("updatePiece", (piece) => {
+            currentPiece = piece;
+            drawPiece();
+        });
+        
+        update();
+    </script>
+</body>
+</html>
